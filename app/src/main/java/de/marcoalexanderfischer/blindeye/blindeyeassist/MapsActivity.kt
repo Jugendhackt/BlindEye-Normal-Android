@@ -2,27 +2,27 @@ package de.marcoalexanderfischer.blindeye.blindeyeassist
 
 import android.annotation.SuppressLint
 import android.location.Location
-import android.location.LocationListener
-import android.location.LocationManager
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.view.Window
 import android.view.WindowManager
-
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
+
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
-import pl.charmas.android.reactivelocation2.ReactiveLocationProvider
-import java.util.function.Consumer
+import com.google.android.gms.tasks.Task
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     // private var locationManager : LocationManager? = null
 
     private lateinit var mMap: GoogleMap
-    private lateinit var location : LatLng
+    private lateinit var location : Location
+    private lateinit var mFusedLocationProviderClient : FusedLocationProviderClient
 
     @SuppressLint("MissingPermission")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,27 +35,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-        var loc: Location
-
-        val locationProvider = ReactiveLocationProvider(this)
-        locationProvider.getLastKnownLocation().subscribe {
-            loc = it
-            location = LatLng(loc.latitude, loc.longitude)
-        }
-
+        // Construct a FusedLocationProviderClient.
+        mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
 
         // locationManager = getSystemService(LOCATION_SERVICE) as LocationManager?;
         // locationManager?.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0L, 0f, locationListener)
     }
-    private val locationListener: LocationListener = object : LocationListener {
-        override fun onLocationChanged(location: Location) {
-            location.longitude
-            location.latitude
-        }
-        override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {}
-        override fun onProviderEnabled(provider: String) {}
-        override fun onProviderDisabled(provider: String) {}
-    }
+
 
     /**
      * Manipulates the map once available.mMap.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
@@ -70,9 +56,27 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
 
+        // Do other setup activities here too, as described elsewhere in this tutorial.
+
+
+        // Get the current location of the device and set the position of the map.
+        getDeviceLocation();
+
         // Add a marker in Sydney and move the camera
         // val sydney = LatLng(-34.0, 151.0)
         // mMap.addMarker(MarkerOptions().position(location).title("Your last known location"))
         // mMap.moveCamera(CameraUpdateFactory.newLatLng(location))
+    }
+
+    fun getDeviceLocation() {
+        var locationTask : Task<Location> = mFusedLocationProviderClient.lastLocation
+        locationTask.addOnCompleteListener(this) {
+            if(it.isSuccessful) {
+                var location = it.result
+                var latLng : LatLng = LatLng(location!!.latitude, location.longitude)
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 18f))
+                mMap.addMarker(MarkerOptions().position(latLng).title("Your last known location"))
+            }
+        }
     }
 }

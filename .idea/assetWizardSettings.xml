@@ -36,7 +36,10 @@
                                     <map>
                                       <entry key="backgroundAssetType" value="COLOR" />
                                       <entry key="backgroundColor" value="dbdbdd" />
-                                      <entry key="foregroundImage" value="$USER_HOME$/Downloads/photo5461176270235740485.jpg" />
+                                      <entry key="backgroundLayerName" value="ic_launcher_background" />
+                                      <entry key="foregroundImage" value="$USER_HOME$/Downloads/logo_transparent.png" />
+                                      <entry key="foregroundLayerName" value="ic_launcher_foreground" />
+                                      <entry key="outputName" value="logo-inapp" />
                                     </map>
                                   </option>
                                 </PersistentState>

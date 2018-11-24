@@ -41,7 +41,7 @@
             android:layout_marginEnd="8dp" app:layout_constraintStart_toStartOf="parent"
             android:layout_marginStart="8dp"/>
     <TextView
-            android:text="  #The pretty picture :D Type=Application                           #Um? Categories=Development             #Cat"
+            android:text="Please make sure to grant the App Location-Permissions."
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/textView3" android:layout_marginBottom="8dp"

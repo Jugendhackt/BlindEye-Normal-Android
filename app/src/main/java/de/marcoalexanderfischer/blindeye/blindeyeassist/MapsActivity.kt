@@ -1,5 +1,8 @@
 package de.marcoalexanderfischer.blindeye.blindeyeassist
 
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.view.Window
@@ -13,6 +16,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
+    private var locationManager : LocationManager? = null
 
     private lateinit var mMap: GoogleMap
 
@@ -25,6 +29,18 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
+
+        locationManager = getSystemService(LOCATION_SERVICE) as LocationManager?;
+        locationManager?.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0L, 0f, locationListener)
+    }
+    private val locationListener: LocationListener = object : LocationListener {
+        override fun onLocationChanged(location: Location) {
+            location.longitude
+            location.latitude
+        }
+        override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {}
+        override fun onProviderEnabled(provider: String) {}
+        override fun onProviderDisabled(provider: String) {}
     }
 
     /**

@@ -75,6 +75,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 var location = it.result
                 var latLng : LatLng = LatLng(location!!.latitude, location.longitude)
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 18f))
+
                 mMap.addMarker(MarkerOptions().position(latLng).title("Your last known location"))
             }
         }

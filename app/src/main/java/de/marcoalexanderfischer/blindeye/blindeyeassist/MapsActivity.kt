@@ -7,15 +7,14 @@ import android.os.Bundle
 import android.view.Window
 import android.view.WindowManager
 import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
-import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.*
 
-import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.tasks.Task
+import pl.charmas.android.reactivelocation2.ReactiveLocationProvider
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     // private var locationManager : LocationManager? = null
@@ -31,31 +30,18 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
         setContentView(R.layout.activity_maps)
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        val mapFragment = supportFragmentManager
-            .findFragmentById(R.id.map) as SupportMapFragment
+        val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
         // Construct a FusedLocationProviderClient.
         mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
-
-        // locationManager = getSystemService(LOCATION_SERVICE) as LocationManager?;
-        // locationManager?.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0L, 0f, locationListener)
     }
 
-
-    /**
-     * Manipulates the map once available.mMap.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(bla))
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
-
+        mMap!!.setOnMapClickListener {
+            mMap.addMarker(MarkerOptions().position(it).title("Neues Hindernis"))
+        }
         // Do other setup activities here too, as described elsewhere in this tutorial.
 
 
@@ -68,16 +54,20 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         // mMap.moveCamera(CameraUpdateFactory.newLatLng(location))
     }
 
+    @SuppressLint("MissingPermission")
     fun getDeviceLocation() {
-        var locationTask : Task<Location> = mFusedLocationProviderClient.lastLocation
-        locationTask.addOnCompleteListener(this) {
-            if(it.isSuccessful) {
-                var location = it.result
-                var latLng : LatLng = LatLng(location!!.latitude, location.longitude)
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 18f))
+        val request: LocationRequest = LocationRequest.create()
+            .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+            .setInterval(1000)
 
+        val locationProvider = ReactiveLocationProvider(this)
+        locationProvider.getUpdatedLocation(request)
+            .subscribe {
+                val lat = it.latitude
+                val long = it.longitude
+                var latLng = LatLng(lat, long)
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 18f))
                 mMap.addMarker(MarkerOptions().position(latLng).title("Your last known location"))
             }
-        }
     }
 }

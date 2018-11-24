@@ -1,5 +1,6 @@
 package de.marcoalexanderfischer.blindeye.blindeyeassist
 
+import android.annotation.SuppressLint
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
@@ -14,12 +15,16 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import pl.charmas.android.reactivelocation2.ReactiveLocationProvider
+import java.util.function.Consumer
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
-    private var locationManager : LocationManager? = null
+    // private var locationManager : LocationManager? = null
 
     private lateinit var mMap: GoogleMap
+    private lateinit var location : LatLng
 
+    @SuppressLint("MissingPermission")
     override fun onCreate(savedInstanceState: Bundle?) {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         super.onCreate(savedInstanceState)
@@ -30,8 +35,17 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-        locationManager = getSystemService(LOCATION_SERVICE) as LocationManager?;
-        locationManager?.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0L, 0f, locationListener)
+        var loc: Location
+
+        val locationProvider = ReactiveLocationProvider(this)
+        locationProvider.getLastKnownLocation().subscribe {
+            loc = it
+            location = LatLng(loc.latitude, loc.longitude)
+        }
+
+
+        // locationManager = getSystemService(LOCATION_SERVICE) as LocationManager?;
+        // locationManager?.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0L, 0f, locationListener)
     }
     private val locationListener: LocationListener = object : LocationListener {
         override fun onLocationChanged(location: Location) {
@@ -44,7 +58,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     /**
-     * Manipulates the map once available.
+     * Manipulates the map once available.mMap.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(bla))
      * This callback is triggered when the map is ready to be used.
      * This is where we can add markers or lines, add listeners or move the camera. In this case,
      * we just add a marker near Sydney, Australia.
@@ -57,7 +72,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
         // Add a marker in Sydney and move the camera
         // val sydney = LatLng(-34.0, 151.0)
-        // mMap.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
-        // mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney))
+        // mMap.addMarker(MarkerOptions().position(location).title("Your last known location"))
+        // mMap.moveCamera(CameraUpdateFactory.newLatLng(location))
     }
 }

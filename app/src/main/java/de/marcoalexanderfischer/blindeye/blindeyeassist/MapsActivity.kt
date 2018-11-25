@@ -1,27 +1,35 @@
 package de.marcoalexanderfischer.blindeye.blindeyeassist
 
 import android.annotation.SuppressLint
-import android.location.Location
-import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.os.StrictMode
+import android.support.v7.app.AlertDialog
+import android.support.v7.app.AppCompatActivity
+import android.text.InputType
+import android.util.Log
 import android.view.Window
 import android.view.WindowManager
+import android.widget.EditText
+import android.widget.Toast
+import com.android.volley.Request
+import com.android.volley.Response
+import com.android.volley.toolbox.JsonObjectRequest
+import com.android.volley.toolbox.StringRequest
+import com.android.volley.toolbox.Volley
 import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
-import com.google.android.gms.maps.*
-
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
-import com.google.android.gms.tasks.Task
-import pl.charmas.android.reactivelocation2.ReactiveLocationProvider
+import org.json.JSONArray
+import org.json.JSONObject
+import java.util.*
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
-    // private var locationManager : LocationManager? = null
-
     private lateinit var mMap: GoogleMap
-    private lateinit var location : Location
-    private lateinit var mFusedLocationProviderClient : FusedLocationProviderClient
+    private lateinit var mFusedLocationProviderClient: FusedLocationProviderClient
 
     @SuppressLint("MissingPermission")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,37 +45,87 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
     }
 
+    @SuppressLint("MissingPermission")
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
-        mMap!!.setOnMapClickListener {
+        mMap.isMyLocationEnabled = true
+        sendGet("obstacles")
+        mMap.setOnMapClickListener {
+            displayAlert(it)
             mMap.addMarker(MarkerOptions().position(it).title("Neues Hindernis"))
         }
-        // Do other setup activities here too, as described elsewhere in this tutorial.
-
-
-        // Get the current location of the device and set the position of the map.
-        getDeviceLocation();
-
-        // Add a marker in Sydney and move the camera
-        // val sydney = LatLng(-34.0, 151.0)
-        // mMap.addMarker(MarkerOptions().position(location).title("Your last known location"))
-        // mMap.moveCamera(CameraUpdateFactory.newLatLng(location))
     }
 
-    @SuppressLint("MissingPermission")
-    fun getDeviceLocation() {
-        val request: LocationRequest = LocationRequest.create()
-            .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-            .setInterval(1000)
+    private fun sendPost(path: String, data: JSONObject) {
+        val policy = StrictMode.ThreadPolicy.Builder().permitAll().build()
+        StrictMode.setThreadPolicy(policy)
+        val queue = Volley.newRequestQueue(this)
+        val url = "http://192.168.137.1:4242/$path" // TODO: No hardcoded IP
 
-        val locationProvider = ReactiveLocationProvider(this)
-        locationProvider.getUpdatedLocation(request)
-            .subscribe {
-                val lat = it.latitude
-                val long = it.longitude
-                var latLng = LatLng(lat, long)
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 18f))
-                mMap.addMarker(MarkerOptions().position(latLng).title("Your last known location"))
+        val request = JsonObjectRequest(Request.Method.POST, url, data, Response.Listener<JSONObject> {
+            Toast.makeText(this, "Erfolgreich hochgeladen", Toast.LENGTH_LONG).show()
+        }, Response.ErrorListener {
+            Toast.makeText(this, "Es ist ein Fehler aufgetreten", Toast.LENGTH_LONG).show()
+        })
+
+        queue.add(request)
+    }
+
+    private fun sendGet(path: String) {
+        val policy = StrictMode.ThreadPolicy.Builder().permitAll().build()
+        StrictMode.setThreadPolicy(policy)
+        val url = "http://192.168.137.1:4242/$path" // TODO: No hardcoded IP
+        val queue = Volley.newRequestQueue(this)
+
+        val stringReq = StringRequest(Request.Method.GET, url,
+            Response.Listener<String> { response ->
+
+                var stringResponse = response.toString()
+                val jsonArray = JSONArray(stringResponse)
+                for (i in 0 until jsonArray.length()) {
+                    var jsonInner: JSONObject = jsonArray.getJSONObject(i)
+                    val description = jsonInner.get("description") as String
+                    val responseLat = jsonInner.get("lat") as Double
+                    val responseLong = jsonInner.get("long") as Double
+                    mMap.addMarker(MarkerOptions().position(LatLng(responseLat, responseLong)).title(description))
+                }
+            },
+            Response.ErrorListener { Log.e("HTTP", "Error in resolving!") })
+        queue.add(stringReq)
+    }
+
+    private fun displayAlert(latLng: LatLng) {
+        val alert = AlertDialog.Builder(this)
+        var editTextData: EditText? = null
+
+        // Builder
+        with(alert) {
+            setTitle("Hindernis Eingabe")
+            setMessage("Gebe den Namen des Hindernisses ein!")
+
+            // Add any  input field here
+            editTextData = EditText(context)
+            editTextData!!.hint = "z.B. 'Eine Treppe, über die man stolpern kann'"
+            editTextData!!.inputType = InputType.TYPE_CLASS_TEXT
+
+            setPositiveButton("Hinzufügen") { dialog, whichButton ->
+                val jsonBody =
+                    JSONObject("{\"id\": ${(0..99999999).random()}, \"description\": \"${editTextData!!.text}\", \"lat\": ${latLng.latitude}, \"long\": ${latLng.longitude}}")
+                sendPost("obstacles", jsonBody)
+                dialog.dismiss()
             }
+
+            setNegativeButton("Abbrechen") { dialog, whichButton ->
+                dialog.dismiss()
+            }
+        }
+
+        // Dialog
+        val dialog = alert.create()
+        dialog.setView(editTextData)
+        dialog.show()
     }
+
+    private fun IntRange.random() =
+        Random().nextInt((endInclusive + 1) - start) + start
 }

@@ -41,7 +41,7 @@
             android:layout_marginEnd="8dp" app:layout_constraintStart_toStartOf="parent"
             android:layout_marginStart="8dp"/>
     <TextView
-            android:text="Please make sure to grant the App Location-Permissions & GPS on."
+            android:text="Please make sure to grant the App Location-Permissions and GPS on."
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/textView3" android:layout_marginBottom="8dp"
